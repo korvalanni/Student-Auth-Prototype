@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: Swagger StudentAuthService
+  description: Сервис авторизации и управления пользователями для начинающих back-end разработчиков
+  version: 1.0.0
+
+servers:
+  - url: https://student-auth-service.korvalanni/swagger.io/api/
+  - url: https://localhost:8080/swagger.io/api/v3
+
+tags:
+  - name: users
+    description: Функциональность пользователя PET-проекта
+  - name: admins
+    description: Функциональность админа PET-проекта
+
+
+paths:
+  /users/signup:
+    post:
+      tags:
+        - users
+      summary: Регистрация под ролью пользователь проекта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                password:
+                  type: string
+              required:
+                - nickname
+                - password
+      responses:
+
+        '200':
+          description: Пользователь проекта успешно зарегистрирован
+
+        '400':
+          description: Неверные данные запроса
+        '401':
+          description: Такой пользователь уже существует
+
+
+  /users/{projectId}/auth:
+    post:
+      tags:
+        - users
+      summary: Авторизоваться под ролью пользователь в проекте
+      description: По id проекта авторизует пользователя с помощью access токена
+      security:
+        - UserAuth: []
+      responses:
+        '200':
+          description: Пользователь авторизован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    format: int64
+                    description: Уникальный идентификатор пользователя.
+                  username:
+                    type: string
+                    description: Логин пользователя.
+                  project_id:
+                    type: integer
+                    format: int64
+                    description: Уникальный идентификатор проекта.
+                  project_name:
+                    type: string
+                    description: Имя проекта, связанного с пользователем.
+                  access_token_end_time:
+                    type: string
+                    description: Дата и время окончания действия access токена
+                    example: "YYYY-MM-DDTHH:mm:ss"
+                    format: timestamp
+        '401':
+          description: Неверный или отсутствующий JWT Bearer токен.
+        '500':
+          description: Ошибка сервера при обработке запроса
+
+  /users/{projectId}/login:
+    post:
+      tags:
+        - users
+      summary: Залогиниться на проект под ролью пользователь
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+              required:
+                - login
+                - password
+      responses:
+        '200':
+          description: Успешный вход
+          headers:
+            Authorization:
+              description: JWT Bearer токен для последующих запросов.
+              schema:
+                type: string
+                example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refresh_token:
+                    type: string
+        '401':
+          description: Неверные учетные данные
+
+  /users/{projectId}/refresh-token:
+    post:
+      tags:
+        - users
+      summary: Обновить access token используя refresh token внутри проекта
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Access токен успешно обновлен
+          headers:
+            Authorization:
+              description: JWT Bearer токен для последующих запросов.
+              schema:
+                type: string
+                example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+        '401':
+          description: Неверный refresh token
+
+  /admin/signup:
+    post:
+      tags:
+        - admins
+      summary: Регистрация админа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                password:
+                  type: string
+              required:
+                - nickname
+                - password
+      responses:
+
+        '200':
+          description: Администратор успешно зарегистрирован
+
+        '400':
+          description: Неверные данные запроса
+        '401':
+          description: Такой пользователь уже существует
+
+  /admin/login:
+    post:
+      tags:
+        - admins
+      summary: Авторизация админа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                password:
+                  type: string
+              required:
+                - nickname
+                - password
+      responses:
+        '200':
+          description: Успешный вход
+          headers:
+            Authorization:
+              description: JWT Bearer токен для последующих запросов.
+              schema:
+                type: string
+                example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  refresh_token:
+                    type: string
+        '401':
+          description: Неверные учетные данные
+
+  /admin/refresh-token:
+    post:
+      tags:
+        - admins
+      summary: Обновление access токена с использованием refresh токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Access токен успешно обновлен
+          headers:
+            Authorization:
+              description: JWT Bearer токен для последующих запросов.
+              schema:
+                type: string
+                example: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+
+        '401':
+          description: Неверный refresh токен или истек срок действия
+
+
+  /admin/projects:
+    post:
+      tags:
+        - admins
+      summary: Создать новый проект
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+              required:
+                - project_name
+      responses:
+        '201':
+          description: Проект успешно создан
+        '400':
+          description: Неверные данные запроса
+
+  /admin/projects/{projectId}:
+    get:
+      tags:
+        - admins
+      summary: Получить детали проекта по ID
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешное получение деталей проекта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          description: Проект не найден
+
+    put:
+      tags:
+        - admins
+      summary: Обновить проект по ID
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_name:
+                  type: string
+              required:
+                - project_name
+      responses:
+        '200':
+          description: Проект успешно обновлен
+        '400':
+          description: Неверные данные запроса
+        '404':
+          description: Проект не найден
+
+    delete:
+      tags:
+        - admins
+      summary: Удалить проект по ID
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Проект успешно удален
+        '404':
+          description: Проект не найден
+
+  /admin/projects/{projectId}/users/{userId}:
+    post:
+      tags:
+        - admins
+      summary: Создать нового пользователя внутри проекта
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+              required:
+                - login
+                - password
+                - role
+      responses:
+        '201':
+          description: Пользователь успешно создан
+        '400':
+          description: Неверные данные запроса
+
+    get:
+      tags:
+        - admins
+      summary: Получить детали пользователя по ID внутри проекта
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешное получение деталей пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Пользователь не найден
+
+    put:
+      tags:
+        - admins
+      summary: Обновить пользователя по ID внутри проекта
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+              required:
+                - login
+                - password
+                - role
+      responses:
+        '200':
+          description: Пользователь успешно обновлен
+        '400':
+          description: Неверные данные запроса
+        '404':
+          description: Пользователь не найден
+
+    delete:
+      tags:
+        - admins
+      summary: Удалить пользователя по ID внутри проекта
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: ID проекта
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          description: ID пользователя
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Пользователь успешно удален
+        '404':
+          description: Пользователь не найден
+
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор проекта.
+        admin_id:
+          type: integer
+          description: Уникальный идентификатор админа, который создал проект.
+        project_name:
+          type: string
+          description: Название проекта.
+      required:
+        - id
+        - admin_id
+        - project_name
+      example:
+        id: 1
+        admin_id: 123
+        project_name: "Мой первый проект"
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+        project_id:
+          type: integer
+        last_login_date:
+          type: string
+          format: date-time
+        create_date:
+          type: string
+          format: date-time
+
+
+  securitySchemes:
+    AdminAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
+    UserAuth:            # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
+
+
+security:
+  - AdminAuth: []
+  - UserAuth: []
+
